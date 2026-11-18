@@ -8,8 +8,6 @@ Code et résultats de mon mémoire de maîtrise en mathématiques et informatiqu
 
 Un article tiré de ce mémoire a été accepté à **WSSE 2026**.
 
-<!-- À COMPLÉTER : lien vers le mémoire (dépôt institutionnel UQTR) et vers l'article WSSE 2026 une fois publiés -->
-
 ---
 
 ## En bref
@@ -23,7 +21,7 @@ Ce travail évalue environ 45 configurations combinant **prétraitement** et **a
 | **CNN1D simple** | ~263K | 20 métriques CK | TensorFlow / Keras |
 | **CNN1D dense** (couche dense additionnelle) | ~330K | 20 métriques CK | TensorFlow / Keras |
 | **Transformer encodeur** (entraîné de zéro) | ~870K | 20 métriques CK | PyTorch |
-| **Multimodal Hybride** (semi-pré-entraîné) | ~125M | Métriques + code source (CodeBERT) | PyTorch, Hugging Face |
+| **Multimodal Hybride** (semi-pré-entraîné) | ~130M | Métriques + code source (CodeBERT) | PyTorch, Hugging Face |
 | **Multimodal Full Pretrained** (entièrement pré-entraîné) | ~250M | Métriques + code source (CodeBERT) | PyTorch, Hugging Face |
 
 ### Questions de recherche
@@ -133,10 +131,10 @@ La filiation des versions successives des scripts multimodaux et les points de m
 
 Les résultats du mémoire et de l'article sont présentés tels qu'ils ont été obtenus et publiés. La vérification du code après publication a mis en évidence les écarts et erreurs ci-dessous. Ils sont rapportés ici par transparence. Leur correction fera l'objet d'un second article.
 
-- **Nombre de paramètres.** Les ordres de grandeur du mémoire (~120K pour le CNN1D simple, ~500K pour l'encodeur) sont des estimations. Les valeurs calculées à partir du code sont données dans le tableau ci-dessus.
+- **Nombre de paramètres.** Les ordres de grandeur du mémoire (~120K pour le CNN1D simple, ~500K pour l'encodeur) sont des estimations. Les valeurs calculées à partir du code sont données dans le tableau de la section « En bref ».
 - **Tableau 8 du mémoire.** Les hyperparamètres indiqués pour l'encodeur entraîné de zéro (384 dimensions, 8 têtes, 2 couches) sont ceux de l'encodeur de métriques du modèle Hybride. L'encodeur unimodal utilise la configuration décrite dans le texte (40 dimensions, 5 couches, 4 têtes).
 - **Modèles multimodaux en CPDP.** Le script retenu a été retrouvé dans le document de travail de l'autrice ; les résultats conservés en ont exactement la structure. Tel qu'il a été conservé, le modèle Full Pretrained ne s'exécute pas (métriques projetées en 384 dimensions, CodeBERT en attend 768) : la version qui a produit les résultats Full Pretrained comportait une adaptation 384 ↔ 768, conforme au §4.3.2 mais non conservée. Synapse figure dans les résultats mais pas dans la liste de projets du script.
-- **Standardisation des modèles multimodaux.** Chaque version passe par son propre `StandardScaler`, y compris la version évaluée. Il s'agit donc en pratique d'une standardisation par version (SV) transductive, et non de la standardisation globale (S1) indiquée au tableau 12.
+- **Standardisation des modèles multimodaux.** Chaque version passe par son propre `StandardScaler`, y compris la version évaluée. Il s'agit donc en pratique d'une standardisation par version (SV) transductive, et non de la standardisation globale (SG) indiquée au tableau 12, où elle est notée « S1 ».
 - **Arrêt précoce et sélection du modèle.** Il n'y a pas de jeu de validation distinct de la dernière version évaluée : l'arrêt précoce du CNN1D (`restore_best_weights=True`) et la sélection du « meilleur » modèle dans les scripts multimodaux sont pilotés par l'ensemble dont le score est rapporté, ce qui peut rendre les G-Mean optimistes. L'encodeur Transformer unimodal (100 époques fixes) n'est pas concerné.
 - **Alignement métriques ↔ code.** La fonction d'alignement du prototype tronque les noms qualifiés au nom du paquetage (`org.apache.tools.ant.Main` devient `orgapachetoolsant`). Mesuré sur le corpus réel, elle ne relie que 0,7 % des classes à leur propre fichier, et chaque version ne reçoit qu'entre 1 et 34 fichiers distincts. Si c'est bien cette fonction qui a produit les résultats multimodaux, ces modèles ont vu un code presque identique d'une classe à l'autre, ce qui pourrait expliquer l'absence de gain du multimodal.
 - **Filtre de variance.** Quelques cellules exploratoires du notebook CNN1D inversent le filtre (elles retirent les colonnes de variance non nulle) ou utilisent un seuil de 1e-4. Les cellules retenues appliquent le seuil σ ≤ 1e-5 décrit au §2.2.2.
@@ -170,7 +168,6 @@ Code and results from my master's thesis (Université du Québec à Trois-Riviè
 - **Scope:** about 45 configurations on 11 Java projects from the PROMISE corpus (41 versions, 15,775 classes, CK metrics), combining three standardization strategies (global, per-version, robust), several class-balancing techniques (SMOTE, Borderline-SMOTE, random undersampling, outlier-aware undersampling) and five architectures: simple and dense 1D CNNs (Keras), a Transformer encoder trained from scratch (PyTorch), and two multimodal models fusing metrics with **CodeBERT** source-code embeddings (semi-pretrained and fully pretrained).
 - **Evaluation:** time-aware validation in **within-project (WPDP)** and **cross-project (CPDP)** settings, with **G-Mean** as the main metric, plus Friedman, Wilcoxon and Nemenyi tests and ANOVA variance decomposition.
 - **Findings:** (1) performance converges on a 60–66% G-Mean plateau, which likely reflects the information limits of static CK metrics; (2) the simple 1D CNN is the best and most stable model in CPDP (66.6%), while the multimodal models, 500–1,000× larger, are the least stable (50.9% and 54.7%); (3) project characteristics explain about 77% of performance variance, versus 23% for methodological choices.
-
 - **Known limitations:** results are reported as published. A post-publication code review found several issues (early stopping driven by the evaluated version, per-version scaling in the multimodal models, and a metrics-to-code alignment that matched only 0.7% of classes to their own file). They are documented in *Écarts relevés* and will be addressed in a follow-up paper.
 - **Traceability:** each retained notebook is mapped to the thesis section and table it supports, with the code-versus-text discrepancies found during verification (see *Traçabilité* above).
 
