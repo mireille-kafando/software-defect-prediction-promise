@@ -159,7 +159,7 @@ Python · TensorFlow/Keras · PyTorch · Hugging Face Transformers (CodeBERT) ·
 
 Sous la direction des professeurs **Mourad Badri** et **Fadel Touré**, Département de mathématiques et d'informatique, UQTR.
 
-<!-- À COMPLÉTER : lien LinkedIn / courriel professionnel -->
+[LinkedIn](https://www.linkedin.com/in/mireille-kafando) · [Portfolio](https://mireille-kafando.github.io) · [GitHub](https://github.com/mireille-kafando)
 
 ---
 
