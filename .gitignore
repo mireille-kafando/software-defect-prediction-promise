@@ -1,25 +1,3 @@
-# Données (non redistribuées, voir data/README.md)
-data/*
-!data/README.md
-
-# Modèles entraînés et sorties volumineuses
-*.pt
-*.pth
-*.h5
-*.keras
-*.pkl
-*.joblib
-wandb/
-
-# Python / Jupyter
 __pycache__/
 *.pyc
-.ipynb_checkpoints/
-.venv/
-venv/
-
-# Systèmes d'exploitation et éditeurs
-.DS_Store
-Thumbs.db
-.idea/
-.vscode/
+sorties/

@@ -1,12 +1,14 @@
-# Prédiction des défauts logiciels par apprentissage profond
+# Prédiction des défauts logiciels : CNN ou Transformers ?
 
-**CNN1D, Transformer et modèles hybrides métriques + CodeBERT sur les projets PROMISE**
+**Analyse comparative des approches de prédiction de fautes logicielles basées sur les architectures CNN et Transformers**
 
-Code et résultats de mon mémoire de maîtrise en mathématiques et informatique appliquées (concentration génie logiciel), Université du Québec à Trois-Rivières (UQTR), 2026.
+Code et résultats de mon mémoire de maîtrise en mathématiques et informatique appliquées (concentration génie logiciel), Université du Québec à Trois-Rivières (UQTR), février 2026.
 
 [English summary below](#english-summary)
 
-<!-- À COMPLÉTER : lien vers le mémoire (dépôt institutionnel UQTR) une fois disponible -->
+Un article tiré de ce mémoire a été accepté à **WSSE 2026**.
+
+<!-- À COMPLÉTER : lien vers le mémoire (dépôt institutionnel UQTR) et vers l'article WSSE 2026 une fois publiés -->
 
 ---
 
@@ -14,87 +16,130 @@ Code et résultats de mon mémoire de maîtrise en mathématiques et informatiqu
 
 Prédire quelles classes d'un logiciel contiendront des défauts aide les équipes à cibler leurs tests et leurs revues de code. Le problème est difficile : les classes défectueuses sont minoritaires, si bien qu'un modèle peut afficher une bonne exactitude tout en manquant la plupart des défauts.
 
-Ce projet compare trois familles de modèles d'apprentissage profond sur les métriques de code de 11 projets Java open source :
+Ce travail évalue environ 45 configurations combinant **prétraitement** et **architectures d'apprentissage profond** sur 11 projets Java du corpus PROMISE (41 versions, 15 775 classes, métriques CK), selon un gradient croissant de pré-entraînement :
 
-| Étape | Modèle | Entrées | Outils |
+| Architecture | Paramètres | Entrées | Outils |
 |---|---|---|---|
-| 1 | **CNN1D** | Métriques logicielles | TensorFlow / Keras |
-| 2 | **Transformer** (encodeur) | Métriques logicielles | PyTorch |
-| 3 | **Modèles hybrides** : *Hybrid* (encodeur entraîné de zéro) et *Full Pretrained* (encodeur pré-entraîné) | Métriques + code source encodé par **CodeBERT** | PyTorch, Hugging Face Transformers |
+| **CNN1D simple** | ~263K | 20 métriques CK | TensorFlow / Keras |
+| **CNN1D dense** (couche dense additionnelle) | ~330K | 20 métriques CK | TensorFlow / Keras |
+| **Transformer encodeur** (entraîné de zéro) | ~870K | 20 métriques CK | PyTorch |
+| **Multimodal Hybride** (semi-pré-entraîné) | ~125M | Métriques + code source (CodeBERT) | PyTorch, Hugging Face |
+| **Multimodal Full Pretrained** (entièrement pré-entraîné) | ~250M | Métriques + code source (CodeBERT) | PyTorch, Hugging Face |
 
-Les résultats des modèles CNN1D et Transformer font l'objet d'une analyse statistique (Shapiro-Wilk, Friedman, Wilcoxon, Nemenyi).
+### Questions de recherche
 
-**Points clés**
+- **RQ1 — Prétraitement :** quel est l'effet des stratégies de standardisation et des techniques d'équilibrage, avec ou sans suppression des valeurs aberrantes ?
+- **RQ2 — Architecture :** les Transformers surpassent-ils les CNN1D ?
+- **RQ3 — Transférabilité :** comment la performance varie-t-elle entre prédiction intra-projet (WPDP) et inter-projets (CPDP) ?
+- **RQ4 — Validation statistique :** les différences observées sont-elles significatives ?
 
-- Le déséquilibre des classes est traité par rééchantillonnage (SMOTE, Borderline-SMOTE, ADASYN, SMOTE-Tomek) et par la détection de valeurs aberrantes (IsolationForest).
-- La métrique principale est la **G-Mean** (moyenne géométrique de la sensibilité et de la spécificité), plus fiable que l'exactitude sur des données déséquilibrées.
-- Deux protocoles d'évaluation : **intra-version** (entraînement et test sur une même version) et **inter-version** (entraînement sur les versions antérieures d'un projet, test sur une version ultérieure). Les modèles hybrides sont évalués en inter-version.
+### Protocole expérimental
+
+- **Standardisation** : globale (**SG**, paramètres estimés sur toutes les versions d'entraînement), par version (**SV**), et robuste (**SR**, stratégie hybride proposée dans le mémoire).
+- **Équilibrage des classes** : SMOTE, Borderline-SMOTE, sous-échantillonnage aléatoire, sous-échantillonnage après détection des valeurs aberrantes (EllipticEnvelope puis IsolationForest, avec ACP).
+- **Validation temporelle**, qui respecte l'ordre des versions :
+  - **WPDP** (intra-projet) : entraînement sur les versions 1 à n−1 d'un projet, validation sur sa dernière version n.
+  - **CPDP** (inter-projets) : entraînement sur les versions 1 à n−1 du projet cible **et** sur toutes les versions des autres projets, validation sur la dernière version n du projet cible.
+- **Métrique principale** : **G-Mean** (moyenne géométrique de la sensibilité et de la spécificité), complétée par l'exactitude, le rapport de classification et la matrice de confusion.
+- **Statistiques** : tests de normalité, Friedman, Wilcoxon, Nemenyi, décomposition de la variance (ANOVA).
 
 ## Résultats
 
-### CNN1D : G-Mean et exactitude moyennes sur 11 projets
+![G-Mean moyenne par architecture, WPDP vs CPDP](results/figures/gmean_architectures_wpdp_cpdp.png)
 
-Trois configurations expérimentales (cas 1 à 3, détaillées dans le mémoire), évaluées en intra-version et en inter-version.
+| Architecture | WPDP (σ) | CPDP (σ) | Δ CPDP − WPDP |
+|---|---|---|---|
+| CNN1D simple | 63,87 (6,51) | **66,58** (5,49) | +2,71 |
+| CNN1D dense | 63,74 (7,25) | 64,03 (8,68) | +0,29 |
+| Transformer encodeur | 62,23 (7,23) | 61,79 (7,17) | −0,45 |
+| Multimodal Hybride | 61,63 (5,52) | 50,89 (15,63) | −10,74 |
+| Multimodal Full Pretrained | 61,59 (4,45) | 54,69 (17,37) | −6,90 |
 
-<!-- À COMPLÉTER : nommer les cas 1, 2 et 3 -->
+*G-Mean moyenne en %, SMOTE, standardisation SG (modèles multimodaux : standardisation par version en pratique, voir « Écarts relevés »). σ = écart-type entre projets. Modèles multimodaux : 10 projets (Ivy exclu faute de code source suffisant).*
 
-| Évaluation | Indicateur | Cas 1 | Cas 2 | Cas 3 |
-|---|---|---|---|---|
-| Intra-version | G-Mean | 0,637 | 0,634 | 0,626 |
-| Intra-version | Exactitude | 0,806 | 0,816 | 0,822 |
-| Inter-version | G-Mean | 0,619 | 0,631 | 0,636 |
-| Inter-version | Exactitude | 0,725 | 0,764 | 0,766 |
+### Trois constats
 
-L'écart entre l'exactitude (0,73 à 0,82) et la G-Mean (0,62 à 0,64) illustre l'effet du déséquilibre des classes. Le détail par projet se trouve dans [`results/cnn1d_intraversion.csv`](results/cnn1d_intraversion.csv) et [`results/cnn1d_interversion.csv`](results/cnn1d_interversion.csv).
+1. **Un plateau de performance.** Presque toutes les configurations convergent entre 60 et 66 % de G-Mean, quels que soient le prétraitement et l'architecture. Ce plafond reflète probablement les limites informationnelles des métriques CK statiques plutôt qu'une limite algorithmique.
+2. **La simplicité gagne en inter-projets.** Le CNN1D simple obtient la meilleure moyenne et la plus faible variabilité en CPDP. Les modèles multimodaux, environ 500 à 1 000 fois plus gros, sont les plus instables : leur G-Mean CPDP s'effondre sur certains projets (camel, xerces).
+3. **Le contexte du projet domine.** Les caractéristiques propres aux projets expliquent environ 77 % de la variance en WPDP, contre 23 % pour les choix méthodologiques. La plupart des comparaisons entre méthodes ne sont pas statistiquement significatives : ce résultat documente les limites actuelles de la prédiction à partir de métriques statiques.
 
-### Modèles hybrides métriques + CodeBERT : G-Mean par projet
+### Résultats détaillés
 
-| Projet | Hybrid | Full Pretrained |
-|---|---|---|
-| ant | 0,700 | **0,728** |
-| camel | **0,353** | 0,251 |
-| jedit | 0,638 | **0,647** |
-| log4j | 0,462 | **0,477** |
-| lucene | 0,612 | **0,626** |
-| poi | 0,691 | **0,753** |
-| synapse | 0,456 | **0,638** |
-| velocity | 0,282 | **0,548** |
-| xalan | **0,579** | 0,537 |
-| xerces | **0,316** | 0,265 |
-| **Moyenne** | 0,509 | **0,547** |
+| Fichier | Contenu |
+|---|---|
+| [`results/cnn1d_simple_gmean.csv`](results/cnn1d_simple_gmean.csv) | CNN1D simple, 11 projets × {SG, SV, SR} × {WPDP, CPDP} |
+| [`results/cnn1d_dense_gmean.csv`](results/cnn1d_dense_gmean.csv) | CNN1D dense, mêmes configurations |
+| [`results/transformer_encodeur_gmean.csv`](results/transformer_encodeur_gmean.csv) | Transformer encodeur, 3 techniques d'équilibrage × {WPDP, CPDP} |
+| [`results/multimodal_wpdp_cpdp.csv`](results/multimodal_wpdp_cpdp.csv) | Hybride et Full Pretrained : G-Mean, exactitude, sensibilité, spécificité, F1 |
 
-- Le modèle *Full Pretrained* obtient la meilleure G-Mean sur 7 projets sur 10.
-- Les performances varient fortement d'un projet à l'autre. Sur camel et xerces, la sensibilité reste très faible (moins de 0,13) : le modèle détecte peu de classes défectueuses malgré le rééchantillonnage.
-- Exactitude, sensibilité et spécificité pour chaque projet : [`results/codebert_final_results.csv`](results/codebert_final_results.csv).
+Les G-Mean CPDP des modèles multimodaux sont celles calculées par le notebook, égales à √(sensibilité × spécificité). Elles corrigent des erreurs de transcription du tableau 12 du mémoire.
 
-Ces deux séries d'expériences ne sont pas directement comparables : elles n'utilisent ni les mêmes projets (ivy n'apparaît que dans la première) ni exactement le même protocole.
+### Modèles multimodaux en CPDP : G-Mean par projet
 
-### Exemple : courbes d'apprentissage et métriques finales (projet ant)
+![G-Mean par projet des modèles multimodaux en CPDP](results/figures/gmean_par_projet.png)
 
-![Comparaison Hybrid vs Full Pretrained sur le projet ant](results/figures/comparison_ant.png)
+Courbes d'apprentissage et métriques finales pour chaque projet dans [`results/figures/`](results/figures/), par exemple :
 
-Les figures des 10 projets se trouvent dans [`results/figures/`](results/figures/).
+![Comparaison Hybride vs Full Pretrained sur le projet ant](results/figures/comparison_ant.png)
 
 ## Organisation du dépôt
 
 ```
 notebooks/
-├── 01_cnn1d/                 CNN1D sur les métriques (exploration, couche dense, version finale)
-├── 02_analyse_cnn1d/         Analyse statistique des résultats CNN1D
-├── 03_transformer/           Encodeur Transformer sur les métriques
-├── 04_analyse_transformer/   Analyse statistique des résultats Transformer
-├── 05_hybride_codebert/      Fusion métriques + CodeBERT, rééchantillonnage, alignement métriques/code
-├── 06_pipeline_final/        Expériences finales sur les 10 projets (Hybrid vs Full Pretrained)
-└── 07_figures_memoire/       Figures, tableaux et statistiques descriptives du mémoire
-results/
-├── cnn1d_intraversion.csv
-├── cnn1d_interversion.csv
-├── codebert_final_results.csv
-└── figures/                  Une figure de comparaison par projet
-data/README.md                Obtenir les données PROMISE
+├── 01_cnn1d/
+│   ├── 01_cnn1d_exploration.ipynb                 Premiers essais CNN1D (Keras)
+│   ├── 02_cnn1d_couche_dense.ipynb                Variante dense, SG/SV/SR, WPDP/CPDP
+│   └── 03_cnn1d_final.ipynb                       CNN1D retenu pour le mémoire
+├── 02_analyse_cnn1d/
+│   └── analyse_statistique_cnn1d.ipynb            Friedman, Wilcoxon, Mann-Whitney, ACP
+├── 03_transformer/
+│   └── transformer_metriques.ipynb                Encodeur Transformer retenu (PyTorch)
+├── 04_analyse_transformer/
+│   └── analyse_statistique_transformer.ipynb      Friedman, Nemenyi, Wilcoxon, ANOVA
+├── 05_multimodal/                                 Métriques + code source (CodeBERT)
+│   ├── 01_exploration_outliers_reechantillonnage.ipynb   Essais + agrégation des résultats
+│   ├── 02_alignement_metriques_code.ipynb
+│   ├── 03_variantes_hybride_fullpretrained.ipynb
+│   ├── 04_encodeur_decodeur_reechantillonnage.ipynb
+│   ├── 05_hybride_fullpretrained_wpdp.ipynb        Hybride et Full Pretrained, WPDP
+│   └── 06_pipeline_cpdp_exploratoire.ipynb         Essais inter-projets antérieurs
+└── 06_figures_memoire/                            Figures, tableaux, statistiques descriptives
+scripts/
+└── multimodal_cpdp_hybride_fullpretrained.py      Hybride et Full Pretrained, CPDP (prototype retenu)
+results/                                           Résultats CSV et figures
+data/README.md                                     Obtenir les données PROMISE
+docs/genealogie_scripts.md                         Filiation des versions des scripts multimodaux
 ```
 
-Chaque notebook commence par une cellule qui décrit son rôle dans le mémoire.
+Chaque notebook commence par une cellule qui décrit son rôle et son statut (retenu ou exploratoire). Les sorties d'exécution ont été retirées pour alléger le dépôt. Les notebooks exploratoires sont conservés pour la transparence : ils montrent les itérations qui ont mené aux versions retenues.
+
+## Traçabilité : du mémoire au code
+
+Chaque script retenu a été comparé aux définitions du mémoire final (chapitre 4) et, quand c'était possible, aux sorties imprimées par le notebook lui-même.
+
+| Élément du mémoire | Notebook | Vérification |
+|---|---|---|
+| CNN1D, §4.3.1, tableaux 9 et 10 | `01_cnn1d/03_cnn1d_final` | 3 × Conv1D(256, noyau 2), dropout 0,25 → 0,5, L2 0,01 : conforme. Le notebook imprime 329 730 paramètres pour la variante dense ; la variante simple en compte 263 938. |
+| Standardisation SG / SV, §4.2.1 | `01_cnn1d/03_cnn1d_final` | Cellules SG et SV présentes ; seuil σ ≤ 1e-5 conforme. |
+| Encodeur Transformer, §4.3.2, tableau 11 | `03_transformer/transformer_metriques` | 40 dimensions, 5 couches, 4 têtes, dropout 0,3, lr 1e-5, 100 époques : conforme au texte. Le notebook imprime 872 682 paramètres. |
+| Hybride et Full Pretrained, §4.3.2, tableau 12 (WPDP) | `05_multimodal/05_hybride_fullpretrained_wpdp` | LazyLinear → 384, 2 couches, `from_pretrained("microsoft/codebert-base")`, `Linear(768, 384)`, attention croisée : conforme. |
+| Hybride et Full Pretrained, tableau 12 (CPDP) | `scripts/multimodal_cpdp_hybride_fullpretrained.py` | Protocole CPDP conforme (versions 1 à n−1 + tous les autres projets). Produit les fichiers de résultats par projet dont viennent les G-Mean publiées. Voir les réserves ci-dessous. |
+| Tests statistiques, §4.5.2, tableaux 15 et 16 | `02_analyse_cnn1d`, `04_analyse_transformer` | Friedman, Wilcoxon, Nemenyi, ANOVA. |
+| Corpus, tableaux 6 et 7, annexe 1 | `06_figures_memoire/statistiques_descriptives` | 11 projets, 41 versions, 15 775 classes. |
+
+### Écarts relevés
+
+La filiation des versions successives des scripts multimodaux et les points de méthode associés sont détaillés dans [`docs/genealogie_scripts.md`](docs/genealogie_scripts.md).
+
+Les résultats du mémoire et de l'article sont présentés tels qu'ils ont été obtenus et publiés. La vérification du code après publication a mis en évidence les écarts et erreurs ci-dessous. Ils sont rapportés ici par transparence. Leur correction fera l'objet d'un second article.
+
+- **Nombre de paramètres.** Les ordres de grandeur du mémoire (~120K pour le CNN1D simple, ~500K pour l'encodeur) sont des estimations. Les valeurs calculées à partir du code sont données dans le tableau ci-dessus.
+- **Tableau 8 du mémoire.** Les hyperparamètres indiqués pour l'encodeur entraîné de zéro (384 dimensions, 8 têtes, 2 couches) sont ceux de l'encodeur de métriques du modèle Hybride. L'encodeur unimodal utilise la configuration décrite dans le texte (40 dimensions, 5 couches, 4 têtes).
+- **Modèles multimodaux en CPDP.** Le script retenu a été retrouvé dans le document de travail de l'autrice ; les résultats conservés en ont exactement la structure. Tel qu'il a été conservé, le modèle Full Pretrained ne s'exécute pas (métriques projetées en 384 dimensions, CodeBERT en attend 768) : la version qui a produit les résultats Full Pretrained comportait une adaptation 384 ↔ 768, conforme au §4.3.2 mais non conservée. Synapse figure dans les résultats mais pas dans la liste de projets du script.
+- **Standardisation des modèles multimodaux.** Chaque version passe par son propre `StandardScaler`, y compris la version évaluée. Il s'agit donc en pratique d'une standardisation par version (SV) transductive, et non de la standardisation globale (S1) indiquée au tableau 12.
+- **Arrêt précoce et sélection du modèle.** Il n'y a pas de jeu de validation distinct de la dernière version évaluée : l'arrêt précoce du CNN1D (`restore_best_weights=True`) et la sélection du « meilleur » modèle dans les scripts multimodaux sont pilotés par l'ensemble dont le score est rapporté, ce qui peut rendre les G-Mean optimistes. L'encodeur Transformer unimodal (100 époques fixes) n'est pas concerné.
+- **Alignement métriques ↔ code.** La fonction d'alignement du prototype tronque les noms qualifiés au nom du paquetage (`org.apache.tools.ant.Main` devient `orgapachetoolsant`). Mesuré sur le corpus réel, elle ne relie que 0,7 % des classes à leur propre fichier, et chaque version ne reçoit qu'entre 1 et 34 fichiers distincts. Si c'est bien cette fonction qui a produit les résultats multimodaux, ces modèles ont vu un code presque identique d'une classe à l'autre, ce qui pourrait expliquer l'absence de gain du multimodal.
+- **Filtre de variance.** Quelques cellules exploratoires du notebook CNN1D inversent le filtre (elles retirent les colonnes de variance non nulle) ou utilisent un seuil de 1e-4. Les cellules retenues appliquent le seuil σ ≤ 1e-5 décrit au §2.2.2.
 
 ## Reproduire les expériences
 
@@ -102,7 +147,7 @@ Chaque notebook commence par une cellule qui décrit son rôle dans le mémoire.
 2. Ouvrir un notebook dans Google Colab (GPU recommandé pour les modèles CodeBERT), ou localement après `pip install -r requirements.txt`.
 3. Adapter les chemins `/content/drive/MyDrive/bug/...` à l'emplacement des données.
 
-Ces notebooks sont des notebooks de recherche : ils gardent la trace des itérations successives et ne constituent pas une bibliothèque prête à l'emploi.
+Les notebooks sont des notebooks de recherche : ils gardent la trace des itérations successives et ne constituent pas une bibliothèque prête à l'emploi.
 
 ## Compétences mises en œuvre
 
@@ -112,15 +157,23 @@ Python · TensorFlow/Keras · PyTorch · Hugging Face Transformers (CodeBERT) ·
 
 **Mireille Kafando**, M. Sc. en mathématiques et informatique appliquées (génie logiciel), UQTR
 
+Sous la direction des professeurs **Mourad Badri** et **Fadel Touré**, Département de mathématiques et d'informatique, UQTR.
+
+<!-- À COMPLÉTER : lien LinkedIn / courriel professionnel -->
+
 ---
 
 ## English summary
 
-Code and results from my master's thesis (Université du Québec à Trois-Rivières, 2026) on **software defect prediction** with deep learning on the PROMISE dataset (11 open-source Java projects).
+Code and results from my master's thesis (Université du Québec à Trois-Rivières, 2026): *a comparative analysis of CNN- and Transformer-based approaches to software defect prediction*.
 
-- **Models:** 1D CNN (Keras) and Transformer encoder (PyTorch) on software metrics, then hybrid models that fuse software metrics with source code embeddings from **CodeBERT**. The *Hybrid* variant uses an encoder trained from scratch, the *Full Pretrained* variant a pretrained encoder.
-- **Class imbalance:** SMOTE, Borderline-SMOTE, ADASYN, SMOTE-Tomek and IsolationForest outlier removal. Models are evaluated with **G-Mean** and validated across project versions.
-- **Results:** the 1D CNN reaches an average G-Mean of about 0.62–0.64 across 11 projects. Among the CodeBERT-based models, *Full Pretrained* achieves the best G-Mean on 7 of 10 projects (mean 0.547 vs 0.509). Results vary widely between projects.
-- **Statistical analysis:** Shapiro-Wilk, Friedman, Wilcoxon and Nemenyi tests.
+- **Scope:** about 45 configurations on 11 Java projects from the PROMISE corpus (41 versions, 15,775 classes, CK metrics), combining three standardization strategies (global, per-version, robust), several class-balancing techniques (SMOTE, Borderline-SMOTE, random undersampling, outlier-aware undersampling) and five architectures: simple and dense 1D CNNs (Keras), a Transformer encoder trained from scratch (PyTorch), and two multimodal models fusing metrics with **CodeBERT** source-code embeddings (semi-pretrained and fully pretrained).
+- **Evaluation:** time-aware validation in **within-project (WPDP)** and **cross-project (CPDP)** settings, with **G-Mean** as the main metric, plus Friedman, Wilcoxon and Nemenyi tests and ANOVA variance decomposition.
+- **Findings:** (1) performance converges on a 60–66% G-Mean plateau, which likely reflects the information limits of static CK metrics; (2) the simple 1D CNN is the best and most stable model in CPDP (66.6%), while the multimodal models, 500–1,000× larger, are the least stable (50.9% and 54.7%); (3) project characteristics explain about 77% of performance variance, versus 23% for methodological choices.
 
-See the tables above and the `results/` folder for details. Data are not redistributed; see `data/README.md`.
+- **Known limitations:** results are reported as published. A post-publication code review found several issues (early stopping driven by the evaluated version, per-version scaling in the multimodal models, and a metrics-to-code alignment that matched only 0.7% of classes to their own file). They are documented in *Écarts relevés* and will be addressed in a follow-up paper.
+- **Traceability:** each retained notebook is mapped to the thesis section and table it supports, with the code-versus-text discrepancies found during verification (see *Traçabilité* above).
+
+Supervised by Profs. Mourad Badri and Fadel Touré (UQTR). A paper based on this thesis was accepted at WSSE 2026.
+
+Data are not redistributed; see `data/README.md`.

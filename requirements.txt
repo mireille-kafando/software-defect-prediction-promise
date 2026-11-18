@@ -1,27 +1,14 @@
-# Les notebooks ont été exécutés sur Google Colab (GPU) entre 2024 et 2026.
-# Versions non figées : utiliser l'environnement Colab courant ou des versions récentes.
-
-# Données et statistiques
 numpy
 pandas
-scipy
 scikit-learn
 imbalanced-learn
+tensorflow
+torch
+transformers
+scipy
 statsmodels
 scikit-posthocs
-
-# Visualisation
 matplotlib
 seaborn
-adjustText
-
-# Apprentissage profond
-tensorflow        # modèles CNN1D (Keras)
-torch             # modèles Transformer et hybrides
-transformers      # CodeBERT (microsoft/codebert-base)
-tqdm
 joblib
-
-# Divers
-python-docx       # export des tableaux du mémoire
-wandb             # optionnel : suivi d'expériences
+tqdm

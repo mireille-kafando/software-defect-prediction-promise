@@ -1,34 +1,31 @@
 # Données
 
-Les données ne sont pas incluses dans ce dépôt. Il s'agit de jeux de données publics de tiers :
+Les données ne sont pas incluses dans ce dépôt : elles appartiennent à leurs auteurs.
 
-1. **Métriques PROMISE** : métriques de code orienté objet (CK, McCabe, etc.) et nombre de défauts par classe, pour plusieurs versions de projets Java open source (Jureczko et Madeyski, 2010).
-2. **Code source** des versions correspondantes de ces projets (projets Apache et autres projets Java open source), utilisé pour les représentations CodeBERT.
+## Métriques PROMISE
 
-## Projets utilisés
+Les fichiers de métriques (une ligne par classe Java, avec le nombre de défauts) proviennent du jeu de données PROMISE pour les projets ant, camel, ivy, jedit, log4j, lucene, poi, synapse, velocity, xalan et xerces.
 
-`ant`, `camel`, `ivy` (CNN1D uniquement), `jedit`, `log4j`, `lucene`, `poi`, `synapse`, `velocity`, `xalan`, `xerces`
-
-## Arborescence attendue
-
-Les notebooks ont été exécutés sur Google Colab avec Google Drive monté. Ils attendent cette arborescence :
+Les notebooks attendent la structure suivante :
 
 ```
-/content/drive/MyDrive/bug/bug-data/
+bug/bug-data/
 ├── ant/
 │   ├── ant-1.3.csv
-│   ├── ant-1.4.csv
-│   └── ...
+│   ├── ...
+│   └── ant-1.7.csv
 ├── camel/
-│   └── camel-1.0.csv ...
-├── ...
-└── source-code/source-code/
-    ├── ant/ant-1.3/ ...
-    └── ...
+└── ...
 ```
 
-Pour une exécution locale, remplacer le préfixe `/content/drive/MyDrive/bug/` par le dossier où se trouvent les données, et retirer les cellules `drive.mount(...)`.
+## Code source (modèles CodeBERT)
 
-## Référence
+Les modèles hybrides ont besoin du code source Java de chaque version, disponible dans les archives officielles des projets Apache et jEdit :
 
-M. Jureczko et L. Madeyski, « Towards identifying software project clusters with regard to defect prediction », *Proceedings of the 6th International Conference on Predictive Models in Software Engineering (PROMISE)*, 2010.
+```
+bug/bug-data/source-code/source-code/<projet>/<projet>-<version>/
+```
+
+## Chemins
+
+Les notebooks ont été exécutés dans Google Colab avec les données dans `MyDrive/bug/`. Pour une exécution locale, remplacer `/content/drive/MyDrive/bug/` par le dossier choisi.
