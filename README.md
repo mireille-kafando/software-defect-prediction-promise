@@ -87,9 +87,13 @@ Chaque comparaison suit le même enchaînement :
 2. test paramétrique (t de Student, ANOVA, ANOVA à mesures répétées) ou non paramétrique (Wilcoxon, Mann-Whitney, Kruskal-Wallis, Friedman) selon le résultat ;
 3. comparaisons par paires.
 
-Aucune des comparaisons de G-Mean n'est significative au seuil de 5 % : standardisation, technique d'équilibrage, WPDP contre CPDP, profondeur du CNN1D, dimension du Transformer. Pour le Transformer encodeur, le test de Friedman sur six configurations donne χ² = 1,34 (p = 0,93). L'exactitude, elle, diffère souvent entre WPDP et CPDP, ce qui justifie le choix de la G-Mean.
+Aucun choix de prétraitement n'a d'effet significatif sur la G-Mean au seuil de 5 % : standardisation, technique d'équilibrage, WPDP contre CPDP, profondeur du CNN1D, dimension du Transformer. Pour le Transformer encodeur, le test de Friedman sur six configurations donne χ² = 1,34 (p = 0,93). L'exactitude, elle, diffère souvent entre WPDP et CPDP, ce qui justifie le choix de la G-Mean.
 
-Résultats détaillés, tableaux de tests et figures : [`results/statistiques/`](results/statistiques/).
+Entre architectures en CPDP, en revanche, le CNN1D simple fait significativement mieux que le Transformer encodeur (Wilcoxon, p = 0,014) et que l'Hybride (Friedman χ² = 7,8, p = 0,020, W de Kendall = 0,39 ; Nemenyi, p = 0,020). La décomposition de variance (ANOVA à trois facteurs) attribue environ 77 % de la variance au projet en WPDP et 60 % en CPDP.
+
+Un notebook de reproduction recalcule à partir des CSV les tests du mémoire (tableaux 15 à 17) et compare chaque valeur à celle publiée.
+
+Résultats détaillés, tableaux de tests et figures : [`results/statistiques/`](results/statistiques/). Reproduction des tableaux 15 à 17 : [`notebooks/07_reproduction_statistique/`](notebooks/07_reproduction_statistique/).
 
 <p align="center"><img src="results/statistiques/figures/transformer_gmean_six_configurations.png" width="70%" alt="Distribution de la G-Mean du Transformer encodeur selon la configuration"></p>
 
@@ -127,7 +131,9 @@ notebooks/
 │   ├── 04_encodeur_decodeur_reechantillonnage.ipynb
 │   ├── 05_hybride_fullpretrained_wpdp.ipynb        Hybride et Full Pretrained, WPDP
 │   └── 06_pipeline_cpdp_exploratoire.ipynb         Essais inter-projets antérieurs
-└── 06_figures_memoire/                            Figures, tableaux, statistiques descriptives
+├── 06_figures_memoire/                            Figures, tableaux, statistiques descriptives
+└── 07_reproduction_statistique/
+    └── reproduction_tableaux_15_17.ipynb          Friedman, W de Kendall, Nemenyi, ANOVA à trois facteurs (2026)
 scripts/
 └── multimodal_cpdp_hybride_fullpretrained.py      Hybride et Full Pretrained, CPDP (prototype retenu)
 results/                                           Résultats CSV et figures
@@ -150,7 +156,8 @@ Chaque script retenu a été comparé aux définitions du mémoire final (chapit
 | Encodeur Transformer, §4.3.2, tableau 11 | `03_transformer/transformer_metriques` | 40 dimensions, 5 couches, 4 têtes, dropout 0,3, lr 1e-5, 100 époques : conforme au texte. Le notebook imprime 872 682 paramètres. |
 | Hybride et Full Pretrained, §4.3.2, tableau 12 (WPDP) | `05_multimodal/05_hybride_fullpretrained_wpdp` | LazyLinear → 384, 2 couches, `from_pretrained("microsoft/codebert-base")`, `Linear(768, 384)`, attention croisée : conforme. |
 | Hybride et Full Pretrained, tableau 12 (CPDP) | `scripts/multimodal_cpdp_hybride_fullpretrained.py` | Protocole CPDP conforme (versions 1 à n−1 + tous les autres projets). Produit les fichiers de résultats par projet dont viennent les G-Mean publiées. Voir les réserves ci-dessous. |
-| Tests statistiques, §4.5.2, tableaux 15 et 16 | `02_analyse_cnn1d`, `04_analyse_transformer` | Friedman, Wilcoxon, Nemenyi, ANOVA. |
+| Tests statistiques, §4.5.2 | `02_analyse_cnn1d`, `04_analyse_transformer` | Shapiro-Wilk, ANOVA, Kruskal-Wallis, Friedman, Wilcoxon. |
+| Tableaux 15, 16 et 17 | `07_reproduction_statistique` | Recalculés en 2026 à partir de `results/` ; concordance détaillée dans `results/statistiques/`. |
 | Corpus, tableaux 6 et 7, annexe 1 | `06_figures_memoire/statistiques_descriptives` | 11 projets, 41 versions, 15 775 classes. |
 
 ### Écarts relevés
@@ -177,7 +184,7 @@ Les notebooks sont des notebooks de recherche : ils gardent la trace des itérat
 
 ## Compétences mises en œuvre
 
-Python · TensorFlow/Keras · PyTorch · Hugging Face Transformers (CodeBERT) · scikit-learn · imbalanced-learn · pandas · SciPy/statsmodels (Shapiro-Wilk, ANOVA, ANOVA à mesures répétées, Kruskal-Wallis, Friedman, Wilcoxon, Tukey HSD, corrélations de Spearman) · Matplotlib/Seaborn · Google Colab
+Python · TensorFlow/Keras · PyTorch · Hugging Face Transformers (CodeBERT) · scikit-learn · imbalanced-learn · pandas · SciPy/statsmodels (Shapiro-Wilk, ANOVA, ANOVA à mesures répétées, Kruskal-Wallis, Friedman, Wilcoxon, Tukey HSD, Nemenyi, W de Kendall, ANOVA à trois facteurs, corrélations de Spearman) · Matplotlib/Seaborn · Google Colab
 
 ## Auteure
 
@@ -196,7 +203,7 @@ Code and results from my master's thesis (Université du Québec à Trois-Riviè
 - **Scope:** about 45 configurations on 11 Java projects from the PROMISE corpus (41 versions, 15,775 classes, CK metrics), combining three standardization strategies (global, per-version, robust), several class-balancing techniques (SMOTE, Borderline-SMOTE, random undersampling, outlier-aware undersampling) and five architectures: simple and dense 1D CNNs (Keras), a Transformer encoder trained from scratch (PyTorch), and two multimodal models fusing metrics with **CodeBERT** source-code embeddings (semi-pretrained and fully pretrained).
 - **Evaluation:** time-aware validation in **within-project (WPDP)** and **cross-project (CPDP)** settings, with **G-Mean** as the main metric, plus Friedman, Wilcoxon and Nemenyi tests and ANOVA variance decomposition.
 - **Findings:** (1) performance converges on a 60–66% G-Mean plateau, which likely reflects the information limits of static CK metrics; (2) the simple 1D CNN is the best and most stable model in CPDP (66.6%), while the multimodal models, 500–1,000× larger, are the least stable (50.9% and 54.7%); (3) project characteristics explain about 77% of performance variance, versus 23% for methodological choices.
-- **Statistics:** Shapiro-Wilk normality checks, then parametric or non-parametric tests (t-test, ANOVA, repeated-measures ANOVA, Kruskal-Wallis, Friedman, Wilcoxon). No G-Mean comparison is significant at α = 0.05. Details and figures in `results/statistiques/`; learning curves in `results/figures/courbes_apprentissage/`.
+- **Statistics:** Shapiro-Wilk normality checks, then parametric or non-parametric tests (t-test, ANOVA, repeated-measures ANOVA, Kruskal-Wallis, Friedman, Wilcoxon). No preprocessing choice significantly affects G-Mean at α = 0.05; in CPDP the simple 1D CNN significantly outperforms the Transformer encoder (p = 0.014) and the Hybrid model (Friedman p = 0.020, Nemenyi p = 0.020). A reproduction notebook recomputes thesis Tables 15–17 (Kendall's W, Nemenyi, three-way ANOVA) from the CSV files. Details and figures in `results/statistiques/`; learning curves in `results/figures/courbes_apprentissage/`.
 - **Known limitations:** results are reported as published. A post-publication code review found several issues (early stopping driven by the evaluated version, per-version scaling in the multimodal models, and a metrics-to-code alignment that matched only 0.7% of classes to their own file). They are documented in *Écarts relevés* and will be addressed in a follow-up paper.
 - **Traceability:** each retained notebook is mapped to the thesis section and table it supports, with the code-versus-text discrepancies found during verification (see *Traçabilité* above).
 

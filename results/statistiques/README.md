@@ -125,19 +125,62 @@ Ces comparaisons partent de fichiers Excel de moyennes par projet (cellules 2 à
 
 <p align="center"><img src="figures/transformer_dimension_20_vs_40.png" width="55%" alt="G-Mean selon la dimension du modèle"></p>
 
-## 4. Conclusion des tests
+## 4. Conclusion des tests des notebooks
 
-Aucune des comparaisons de G-Mean n'est significative au seuil de 5 % : standardisation, technique d'équilibrage, protocole WPDP/CPDP, profondeur du CNN1D, dimension du Transformer. Les écarts entre configurations (1 à 2 points) restent faibles devant la variabilité entre projets (écart type d'environ 7 points). Ce constat rejoint la conclusion du mémoire : les caractéristiques des projets pèsent davantage que les choix méthodologiques.
+Aucune des comparaisons de G-Mean entre choix de prétraitement n'est significative au seuil de 5 % : standardisation, technique d'équilibrage, protocole WPDP/CPDP, profondeur du CNN1D, dimension du Transformer. Les écarts entre configurations (1 à 2 points) restent faibles devant la variabilité entre projets (écart type d'environ 7 points). Ce constat rejoint la conclusion du mémoire : les caractéristiques des projets pèsent davantage que les choix méthodologiques. Les seules différences significatives opposent des architectures en CPDP (section 5).
 
-## Ce qui ne figure pas dans les notebooks conservés
+## 5. Reproduction des tableaux 15, 16 et 17 du mémoire
 
-Le mémoire présente aussi plusieurs analyses absentes des sorties des notebooks retrouvés :
-- le **W de Kendall** ;
-- les tests post-hoc de **Nemenyi** ;
-- la **décomposition de variance par ANOVA à trois facteurs** (projet × standardisation × architecture, tableaux 16 et 17) ;
-- le **test de Friedman entre les cinq architectures**.
+Plusieurs analyses du mémoire ne figurent pas dans les notebooks d'analyse conservés : le W de Kendall, les tests post-hoc, la décomposition de variance (ANOVA à trois facteurs) et les comparaisons entre architectures. Le notebook [`07_reproduction_statistique/reproduction_tableaux_15_17`](../../notebooks/07_reproduction_statistique/reproduction_tableaux_15_17.ipynb), ajouté en 2026, les **recalcule à partir des G-Mean de `results/`** et compare chaque valeur à celle publiée. Il est présenté avec ses sorties ; les tableaux produits sont dans [`reproduction/`](reproduction/).
 
-Elles ont été calculées en dehors de ces notebooks. Les G-Mean nécessaires pour les refaire se trouvent dans les fichiers CSV de [`results/`](../).
+### 5.1 Tableau 15 : Friedman, Wilcoxon et W de Kendall
+
+| Comparaison | Contexte | N | Test | Recalculé | Mémoire | Concorde |
+|---|---|---|---|---|---|---|
+| SG vs SV vs SR (CNN1D simple) | WPDP | 11 | Friedman | χ² = 0,727 ; p = 0,695 ; W = 0,033 | identique | oui |
+| SG vs SV vs SR (CNN1D simple) | CPDP | 11 | Friedman | χ² = 2,182 ; p = 0,336 ; W = 0,099 | identique | oui |
+| CNN1D simple vs dense (SG) | WPDP | 11 | Wilcoxon | 28,0 ; p = 0,700 | identique | oui |
+| CNN1D simple vs dense (SG) | CPDP | 11 | Wilcoxon | 23,0 ; p = 0,413 | identique | oui |
+| SMOTE vs sous-éch. vs outliers (encodeur) | WPDP | 11 | Friedman | χ² = 2,364 ; p = 0,307 ; W = 0,107 | χ² = 2,600 ; p = 0,273 (N = 10) | non |
+| CNN1D simple vs Transformer encodeur | CPDP | 11 | Wilcoxon | 6,0 ; **p = 0,014** | identique | oui |
+| CNN1D vs encodeur vs Hybride | CPDP | 10 | Friedman | χ² = 7,800 ; **p = 0,020** ; W = 0,390 | χ² = 5,600 ; p = 0,061 | non |
+| CNN1D vs encodeur vs Full Pretrained | CPDP | 10 | Friedman | χ² = 5,400 ; p = 0,067 ; W = 0,270 | χ² = 6,200 ; p = 0,045 | non |
+
+Six des huit lignes sont reproduites à l'identique.
+
+- **Les deux comparaisons multimodales.** Elles diffèrent parce que le mémoire utilisait les G-Mean de son tableau 12, qui comportent des erreurs de transcription. Avec les valeurs recalculées, √(sensibilité × spécificité), le test avec l'Hybride donne χ² = 7,800, la valeur retenue dans l'article WSSE 2026. Le test avec le Full Pretrained n'est plus significatif.
+- **L'équilibrage de l'encodeur.** La série de 10 projets utilisée dans le mémoire n'a pas pu être identifiée : aucun retrait d'un seul projet ne redonne χ² = 2,600.
+
+### 5.2 Post-hoc de Nemenyi
+
+Pour la comparaison significative CNN1D – Transformer encodeur – Hybride en CPDP :
+- rangs moyens : CNN1D simple 1,3 ; encodeur 2,2 ; Hybride 2,5 ;
+- **seule la paire CNN1D simple – Hybride diffère significativement** (p = 0,020) ;
+- les paires CNN1D – encodeur (p = 0,109) et encodeur – Hybride (p = 0,780) ne diffèrent pas.
+
+<p align="center"><img src="figures/nemenyi_diagramme_difference_critique.png" width="70%" alt="Diagramme de différence critique de Nemenyi"></p>
+
+### 5.3 Tableaux 16 et 17 : décomposition de variance (ANOVA à trois facteurs)
+
+Facteurs : projet (11), standardisation (3), architecture CNN1D (2), soit 66 observations par contexte. Le modèle comprend les effets principaux et les interactions d'ordre 2.
+
+| Source | WPDP recalculé | WPDP mémoire | CPDP recalculé | CPDP mémoire |
+|---|---|---|---|---|
+| Projet | **77,3 %** (F = 24,3 ; p < 0,001) | 77,0 % | **59,8 %** (F = 11,0 ; p < 0,001) | 60,3 % |
+| Standardisation | 0,0 % (p = 0,967) | 0,1 % | 0,9 % (p = 0,439) | 1,0 % |
+| Architecture | 0,5 % (p = 0,209) | 0,4 % | 1,2 % (p = 0,147) | 1,2 % |
+| Projet × standardisation | 9,5 % | 11,7 % | 18,3 % | 18,2 % |
+| Projet × architecture | 5,8 % | 4,5 % | 8,4 % | 8,4 % |
+| Standardisation × architecture | 0,5 % | 0,3 % | 0,4 % | 0,4 % |
+| Résiduelle | 6,4 % | 6,0 % | 10,9 % | 10,7 % |
+| Somme des carrés totale | 3 410 | 3 149 | 3 187 | 3 157 |
+
+- **CPDP (tableau 17)** : reproduit à quelques dixièmes de point près.
+- **WPDP (tableau 16)** : même structure, mais des écarts plus marqués. Le tableau a probablement été calculé sur une version légèrement différente des G-Mean.
+
+Dans les deux contextes, la conclusion du mémoire tient : le projet explique l'essentiel de la variance, et ni la standardisation ni l'architecture n'ont d'effet significatif.
+
+<p align="center"><img src="figures/anova_decomposition_variance.png" width="75%" alt="Décomposition de la variance de la G-Mean en WPDP et CPDP"></p>
 
 ## Écarts relevés dans les analyses
 
@@ -156,5 +199,6 @@ Les notebooks sont présentés tels qu'ils ont été exécutés. Une relecture a
 Results of the statistical tests run in the thesis analysis notebooks, copied from their execution outputs:
 
 - **Method:** Shapiro-Wilk normality checks, then a parametric test (t-test, ANOVA, repeated-measures ANOVA) or a non-parametric one (Wilcoxon, Mann-Whitney, Kruskal-Wallis, Friedman).
-- **Findings:** none of the G-Mean comparisons is significant at α = 0.05: standardization, balancing technique, WPDP vs CPDP, CNN1D depth, Transformer width. For the Transformer encoder, Friedman χ² = 1.34 (p = 0.93) across six configurations. Accuracy, by contrast, often differs between WPDP and CPDP, which motivates the use of G-Mean. Code metrics are heavily skewed and non-normal (Shapiro-Wilk p < 10⁻¹⁰⁰).
+- **Findings:** no preprocessing choice has a significant effect on G-Mean at α = 0.05 (standardization, balancing, WPDP vs CPDP, CNN1D depth, Transformer width). Between architectures in CPDP, the simple 1D CNN outperforms the Transformer encoder (Wilcoxon p = 0.014) and the Hybrid model (Friedman χ² = 7.8, p = 0.020; Nemenyi p = 0.020). For the Transformer encoder, Friedman χ² = 1.34 (p = 0.93) across six configurations. Accuracy, by contrast, often differs between WPDP and CPDP, which motivates the use of G-Mean. Code metrics are heavily skewed and non-normal (Shapiro-Wilk p < 10⁻¹⁰⁰).
+- **Reproduction:** a 2026 notebook recomputes thesis Tables 15–17 (Friedman with Kendall's W, Nemenyi, three-way ANOVA) from the CSV results; six of eight Table 15 rows and the CPDP variance decomposition match the published values.
 - **Known issues:** some cells apply independent-sample tests to paired data, and pairwise comparisons are not corrected for multiplicity.

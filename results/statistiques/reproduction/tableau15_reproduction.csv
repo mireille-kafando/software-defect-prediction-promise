@@ -1,0 +1,9 @@
+comparaison,contexte,donnees,N,test,statistique,p,W_Kendall,effet,stat_memoire,p_memoire,W_memoire,concorde
+SG vs SV vs SR,WPDP,CNN1D simple,11,Friedman,0.727,0.695,0.033,négligeable,0.727,0.695,0.033,True
+SG vs SV vs SR,CPDP,CNN1D simple,11,Friedman,2.182,0.336,0.099,négligeable,2.182,0.336,0.099,True
+CNN1D simple vs dense,WPDP,SG,11,Wilcoxon,28.0,0.7,,,28.0,0.7,,True
+CNN1D simple vs dense,CPDP,SG,11,Wilcoxon,23.0,0.413,,,23.0,0.413,,True
+SMOTE vs sous-éch. vs outliers,WPDP,"Transformer encodeur, 11 projets",11,Friedman,2.364,0.307,0.107,petit,2.6,0.273,0.13,False
+CNN1D vs Transformer encodeur,CPDP,CNN1D simple SG ; encodeur SMOTE,11,Wilcoxon,6.0,0.014,,,6.0,0.014,,True
+CNN1D vs encodeur vs Hybride,CPDP,SG ; encodeur SMOTE ; 10 projets,10,Friedman,7.8,0.02,0.39,modéré,5.6,0.061,0.28,False
+CNN1D vs encodeur vs Full Pretrained,CPDP,SG ; encodeur SMOTE ; 10 projets,10,Friedman,5.4,0.067,0.27,petit,6.2,0.045,0.31,False
