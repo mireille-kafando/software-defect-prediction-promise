@@ -80,6 +80,32 @@ Courbes d'apprentissage et métriques finales pour chaque projet dans [`results/
 
 ![Comparaison Hybride vs Full Pretrained sur le projet ant](results/figures/comparison_ant.png)
 
+### Analyses statistiques
+
+Chaque comparaison suit le même enchaînement :
+1. test de normalité de Shapiro-Wilk, avec graphique Q-Q ;
+2. test paramétrique (t de Student, ANOVA, ANOVA à mesures répétées) ou non paramétrique (Wilcoxon, Mann-Whitney, Kruskal-Wallis, Friedman) selon le résultat ;
+3. comparaisons par paires.
+
+Aucune des comparaisons de G-Mean n'est significative au seuil de 5 % : standardisation, technique d'équilibrage, WPDP contre CPDP, profondeur du CNN1D, dimension du Transformer. Pour le Transformer encodeur, le test de Friedman sur six configurations donne χ² = 1,34 (p = 0,93). L'exactitude, elle, diffère souvent entre WPDP et CPDP, ce qui justifie le choix de la G-Mean.
+
+Résultats détaillés, tableaux de tests et figures : [`results/statistiques/`](results/statistiques/).
+
+<p align="center"><img src="results/statistiques/figures/transformer_gmean_six_configurations.png" width="70%" alt="Distribution de la G-Mean du Transformer encodeur selon la configuration"></p>
+
+### Courbes d'apprentissage
+
+| Modèle | Exécution | Figure |
+|---|---|---|
+| CNN1D | WPDP, version évaluée synapse 1.2 (Adam, lr 1e-5, 500 époques) | [`cnn1d_synapse_wpdp.png`](results/figures/courbes_apprentissage/cnn1d_synapse_wpdp.png) |
+| CNN1D | version évaluée xerces 1.4.4, entraînement multi-projets (Adam, lr ≈ 4,6e-4, lot de 8) | [`cnn1d_xerces.png`](results/figures/courbes_apprentissage/cnn1d_xerces.png) |
+| Transformer encodeur | 100 époques, version évaluée camel 1.6 | [`transformer_encodeur_camel.png`](results/figures/courbes_apprentissage/transformer_encodeur_camel.png) |
+| Hybride et Full Pretrained | CPDP, un graphique par projet | [`results/figures/comparison_*.png`](results/figures/) |
+
+![Courbes d'apprentissage et matrice de confusion du CNN1D, synapse](results/figures/courbes_apprentissage/cnn1d_synapse_wpdp.png)
+
+Ces courbes montrent un écart croissant entre entraînement et validation, signe de surapprentissage. Pour le CNN1D, l'arrêt précoce restaure les poids de l'époque où la perte sur la version évaluée est la plus faible (voir « Écarts relevés »). Le Transformer encodeur est entraîné sur 100 époques fixes.
+
 ## Organisation du dépôt
 
 ```
@@ -89,11 +115,11 @@ notebooks/
 │   ├── 02_cnn1d_couche_dense.ipynb                Variante dense, SG/SV/SR, WPDP/CPDP
 │   └── 03_cnn1d_final.ipynb                       CNN1D retenu pour le mémoire
 ├── 02_analyse_cnn1d/
-│   └── analyse_statistique_cnn1d.ipynb            Friedman, Wilcoxon, Mann-Whitney, ACP
+│   └── analyse_statistique_cnn1d.ipynb            Shapiro-Wilk, ANOVA, Kruskal-Wallis, t, Wilcoxon, Friedman, Spearman
 ├── 03_transformer/
 │   └── transformer_metriques.ipynb                Encodeur Transformer retenu (PyTorch)
 ├── 04_analyse_transformer/
-│   └── analyse_statistique_transformer.ipynb      Friedman, Nemenyi, Wilcoxon, ANOVA
+│   └── analyse_statistique_transformer.ipynb      ANOVA à mesures répétées, Friedman, Wilcoxon, Tukey HSD
 ├── 05_multimodal/                                 Métriques + code source (CodeBERT)
 │   ├── 01_exploration_outliers_reechantillonnage.ipynb   Essais + agrégation des résultats
 │   ├── 02_alignement_metriques_code.ipynb
@@ -105,11 +131,13 @@ notebooks/
 scripts/
 └── multimodal_cpdp_hybride_fullpretrained.py      Hybride et Full Pretrained, CPDP (prototype retenu)
 results/                                           Résultats CSV et figures
+├── statistiques/                                  Résultats des tests statistiques et figures associées
+└── figures/courbes_apprentissage/                 Courbes d'apprentissage CNN1D et Transformer
 data/README.md                                     Obtenir les données PROMISE
 docs/genealogie_scripts.md                         Filiation des versions des scripts multimodaux
 ```
 
-Chaque notebook commence par une cellule qui décrit son rôle et son statut (retenu ou exploratoire). Les sorties d'exécution ont été retirées pour alléger le dépôt. Les notebooks exploratoires sont conservés pour la transparence : ils montrent les itérations qui ont mené aux versions retenues.
+Chaque notebook commence par une cellule qui décrit son rôle et son statut (retenu ou exploratoire). Les sorties d'exécution ont été retirées pour alléger le dépôt ; les résultats des tests statistiques et les principales figures sont repris dans `results/`. Les notebooks exploratoires sont conservés pour la transparence : ils montrent les itérations qui ont mené aux versions retenues.
 
 ## Traçabilité : du mémoire au code
 
@@ -149,7 +177,7 @@ Les notebooks sont des notebooks de recherche : ils gardent la trace des itérat
 
 ## Compétences mises en œuvre
 
-Python · TensorFlow/Keras · PyTorch · Hugging Face Transformers (CodeBERT) · scikit-learn · imbalanced-learn · pandas · SciPy/statsmodels (tests statistiques) · Matplotlib/Seaborn · Google Colab
+Python · TensorFlow/Keras · PyTorch · Hugging Face Transformers (CodeBERT) · scikit-learn · imbalanced-learn · pandas · SciPy/statsmodels (Shapiro-Wilk, ANOVA, ANOVA à mesures répétées, Kruskal-Wallis, Friedman, Wilcoxon, Tukey HSD, corrélations de Spearman) · Matplotlib/Seaborn · Google Colab
 
 ## Auteure
 
@@ -168,6 +196,7 @@ Code and results from my master's thesis (Université du Québec à Trois-Riviè
 - **Scope:** about 45 configurations on 11 Java projects from the PROMISE corpus (41 versions, 15,775 classes, CK metrics), combining three standardization strategies (global, per-version, robust), several class-balancing techniques (SMOTE, Borderline-SMOTE, random undersampling, outlier-aware undersampling) and five architectures: simple and dense 1D CNNs (Keras), a Transformer encoder trained from scratch (PyTorch), and two multimodal models fusing metrics with **CodeBERT** source-code embeddings (semi-pretrained and fully pretrained).
 - **Evaluation:** time-aware validation in **within-project (WPDP)** and **cross-project (CPDP)** settings, with **G-Mean** as the main metric, plus Friedman, Wilcoxon and Nemenyi tests and ANOVA variance decomposition.
 - **Findings:** (1) performance converges on a 60–66% G-Mean plateau, which likely reflects the information limits of static CK metrics; (2) the simple 1D CNN is the best and most stable model in CPDP (66.6%), while the multimodal models, 500–1,000× larger, are the least stable (50.9% and 54.7%); (3) project characteristics explain about 77% of performance variance, versus 23% for methodological choices.
+- **Statistics:** Shapiro-Wilk normality checks, then parametric or non-parametric tests (t-test, ANOVA, repeated-measures ANOVA, Kruskal-Wallis, Friedman, Wilcoxon). No G-Mean comparison is significant at α = 0.05. Details and figures in `results/statistiques/`; learning curves in `results/figures/courbes_apprentissage/`.
 - **Known limitations:** results are reported as published. A post-publication code review found several issues (early stopping driven by the evaluated version, per-version scaling in the multimodal models, and a metrics-to-code alignment that matched only 0.7% of classes to their own file). They are documented in *Écarts relevés* and will be addressed in a follow-up paper.
 - **Traceability:** each retained notebook is mapped to the thesis section and table it supports, with the code-versus-text discrepancies found during verification (see *Traçabilité* above).
 
