@@ -146,7 +146,7 @@ Plusieurs analyses du mémoire ne figurent pas dans les notebooks d'analyse cons
 | CNN1D vs encodeur vs Hybride | CPDP | 10 | Friedman | χ² = 7,800 ; **p = 0,020** ; W = 0,390 | χ² = 5,600 ; p = 0,061 | non |
 | CNN1D vs encodeur vs Full Pretrained | CPDP | 10 | Friedman | χ² = 5,400 ; p = 0,067 ; W = 0,270 | χ² = 6,200 ; p = 0,045 | non |
 
-Six des huit lignes sont reproduites à l'identique.
+Cinq des sept lignes du tableau 15 sont reproduites à l'identique. Les deux autres, et la comparaison avec le Full Pretrained citée dans le texte de la section 5.2.4 (dernière ligne), ne le sont pas.
 
 - **Les deux comparaisons multimodales.** Elles diffèrent parce que le mémoire utilisait les G-Mean de son tableau 12, qui comportent des erreurs de transcription. Avec les valeurs recalculées, √(sensibilité × spécificité), le test avec l'Hybride donne χ² = 7,800, la valeur retenue dans l'article WSSE 2026. Le test avec le Full Pretrained n'est plus significatif.
 - **L'équilibrage de l'encodeur.** La série de 10 projets utilisée dans le mémoire n'a pas pu être identifiée : aucun retrait d'un seul projet ne redonne χ² = 2,600.
@@ -200,5 +200,5 @@ Results of the statistical tests run in the thesis analysis notebooks, copied fr
 
 - **Method:** Shapiro-Wilk normality checks, then a parametric test (t-test, ANOVA, repeated-measures ANOVA) or a non-parametric one (Wilcoxon, Mann-Whitney, Kruskal-Wallis, Friedman).
 - **Findings:** no preprocessing choice has a significant effect on G-Mean at α = 0.05 (standardization, balancing, WPDP vs CPDP, CNN1D depth, Transformer width). Between architectures in CPDP, the simple 1D CNN outperforms the Transformer encoder (Wilcoxon p = 0.014) and the Hybrid model (Friedman χ² = 7.8, p = 0.020; Nemenyi p = 0.020). For the Transformer encoder, Friedman χ² = 1.34 (p = 0.93) across six configurations. Accuracy, by contrast, often differs between WPDP and CPDP, which motivates the use of G-Mean. Code metrics are heavily skewed and non-normal (Shapiro-Wilk p < 10⁻¹⁰⁰).
-- **Reproduction:** a 2026 notebook recomputes thesis Tables 15–17 (Friedman with Kendall's W, Nemenyi, three-way ANOVA) from the CSV results; six of eight Table 15 rows and the CPDP variance decomposition match the published values.
+- **Reproduction:** a 2026 notebook recomputes thesis Tables 15–17 (Friedman with Kendall's W, Nemenyi, three-way ANOVA) from the CSV results; five of the seven Table 15 rows and the CPDP variance decomposition match the published values.
 - **Known issues:** some cells apply independent-sample tests to paired data, and pairwise comparisons are not corrected for multiplicity.
