@@ -8,7 +8,17 @@ reprises telles quelles du notebook `05_multimodal/05_hybride_fullpretrained_wpd
 qui les contient à l'identique.
 
 Seules modifications par rapport à la source : lignes coupées par la mise en page du PDF recollées,
-emoji des messages print() perdus lors de l'export PDF. Aucune logique n'a été modifiée.
+emoji des messages print() perdus lors de l'export PDF.
+
+Modifications de 2026 pour rendre le script exécutable, repérées dans le code par « [2026] ». Elles ne
+changent ni le protocole, ni les hyperparamètres, ni les prétraitements :
+1. Full Pretrained : ajout de la projection nn.Linear(384, 768) décrite au §4.3.2 du mémoire, avant
+   l'encodeur CodeBERT des métriques ; la sortie (768) est ramenée à 384 par la projection
+   code_projection existante, pour que la fusion reste 768 = 384 + 384 comme décrit.
+2. Synapse ajouté à la liste des projets cibles, comme dans les résultats conservés.
+3. Chemins des données et des résultats configurables par variables d'environnement
+   (SDP_DATA_DIR, SDP_SOURCE_DIR, SDP_RESULTS_DIR) ; par défaut, les chemins Google Colab d'origine.
+La version conservée avant ces modifications reste consultable dans l'historique Git du dépôt.
 
 Protocole : pour chaque projet cible, entraînement sur les versions 1 à n-1 du projet cible et sur
 toutes les versions des autres projets, test sur la version n du projet cible.
@@ -16,11 +26,12 @@ toutes les versions des autres projets, test sur la version n du projet cible.
 Points à connaître avant toute réutilisation (voir docs/genealogie_scripts.md) :
 - Ce script produit les fichiers training_results_<modèle>_<projet>.pkl dont proviennent les G-Mean
   CPDP du tableau 12 (clés identiques, 11 à 23 époques compatibles avec la patience de 10).
-- Tel qu'écrit, FullPretrainedModel échoue : la projection des métriques produit 384 dimensions
-  alors que CodeBERT attend 768 en entrée (inputs_embeds). La version exécutée pour obtenir les
-  résultats Full Pretrained comportait donc une adaptation 384 <-> 768 qui n'a pas été conservée.
-- La liste target_projects ne contient pas synapse, alors que les résultats conservés l'incluent :
-  la version exécutée différait légèrement sur ce point aussi.
+- Dans la version conservée, FullPretrainedModel échouait : la projection des métriques produisait
+  384 dimensions alors que CodeBERT attend 768 en entrée (inputs_embeds). La version exécutée pour
+  obtenir les résultats Full Pretrained comportait donc une adaptation 384 <-> 768 qui n'a pas été
+  conservée ; la modification 1 la rétablit d'après le §4.3.2 du mémoire.
+- La liste target_projects de la version conservée ne contenait pas synapse, alors que les résultats
+  conservés l'incluent (modification 2).
 - Chaque version est standardisée avec son propre StandardScaler (y compris la version de test).
 - L'arrêt précoce (patience 10) est piloté par le F1 de la version de test ; la G-Mean rapportée
   est celle de la dernière époque.
@@ -53,7 +64,10 @@ class Config:
     NUM_LAYERS = 2
     DROPOUT = 0.3
     NUM_CLASSES = 2
-    SAVE_PATH = '/content/drive/MyDrive/bug/results/'
+    # [2026] Chemins configurables ; valeurs par défaut : chemins Google Colab d'origine
+    SAVE_PATH = os.path.join(os.environ.get('SDP_RESULTS_DIR', '/content/drive/MyDrive/bug/results/'), '')
+    DATA_DIR = os.environ.get('SDP_DATA_DIR', '/content/drive/MyDrive/bug/bug-data/')
+    SOURCE_DIR = os.environ.get('SDP_SOURCE_DIR', '/content/drive/MyDrive/bug/bug-data/source-code/source-code/')
 
     # Paramètres pour l'équilibrage
     LABEL_SMOOTHING = 0.1
@@ -180,6 +194,9 @@ class FullPretrainedModel(nn.Module):
             nn.Dropout(Config.DROPOUT)
         )
 
+        # [2026] Projection des métriques vers la dimension d'entrée de CodeBERT (mémoire, §4.3.2)
+        self.metrics_to_codebert = nn.Linear(Config.EMBEDDING_DIM, 768)
+
         # Decoder PRÉ-ENTRAîNÉ RoBERTa pour le code
         self.code_decoder = RobertaModel.from_pretrained("microsoft/codebert-base")
 
@@ -217,6 +234,7 @@ class FullPretrainedModel(nn.Module):
 
     def forward(self, metrics, code_tokens):
         metrics_embedded = self.metrics_projection(metrics).unsqueeze(1)
+        metrics_embedded = self.metrics_to_codebert(metrics_embedded)  # [2026] 384 -> 768
 
         metrics_attention_mask = torch.ones(metrics_embedded.size(0), 1).to(metrics.device)
 
@@ -225,6 +243,7 @@ class FullPretrainedModel(nn.Module):
             attention_mask=metrics_attention_mask
         )
         metrics_encoded = metrics_encoder_output.last_hidden_state
+        metrics_encoded = self.code_projection(metrics_encoded)  # [2026] 768 -> 384, projection partagée
 
         code_outputs = self.code_decoder(**code_tokens)
         code_encoded = code_outputs.last_hidden_state
@@ -806,8 +825,8 @@ def train_model_multi_project(model_type="hybrid", target_project="ant"):
     tokenizer = RobertaTokenizer.from_pretrained("microsoft/codebert-base")
 
     # Chemins des données
-    metrics_dir = "/content/drive/MyDrive/bug/bug-data/"
-    source_dir = "/content/drive/MyDrive/bug/bug-data/source-code/source-code/"
+    metrics_dir = Config.DATA_DIR  # [2026] chemins configurables
+    source_dir = Config.SOURCE_DIR
 
     # Préparer les datasets selon la stratégie multi-projets
     X_train, all_train_code, y_train, train_filenames, X_val, val_code_tokens, y_val, val_filenames = prepare_cross_project_datasets(
@@ -1007,7 +1026,7 @@ def main_multi_project():
     print("=" * 80)
 
     # Liste des projets à évaluer
-    target_projects = ["ant", "camel", "jedit", "log4j", "lucene", "poi", "velocity", "xalan", "xerces"]
+    target_projects = ["ant", "camel", "jedit", "log4j", "lucene", "poi", "synapse", "velocity", "xalan", "xerces"]  # [2026] synapse ajouté
 
     all_results = {}
 

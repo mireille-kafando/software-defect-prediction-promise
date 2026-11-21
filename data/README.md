@@ -28,4 +28,4 @@ bug/bug-data/source-code/source-code/<projet>/<projet>-<version>/
 
 ## Chemins
 
-Les notebooks ont été exécutés dans Google Colab avec les données dans `MyDrive/bug/`. Pour une exécution locale, remplacer `/content/drive/MyDrive/bug/` par le dossier choisi.
+Les notebooks ont été exécutés dans Google Colab avec les données dans `MyDrive/bug/`. Pour une exécution locale, remplacer `/content/drive/MyDrive/bug/` par le dossier choisi. Le script `scripts/multimodal_cpdp_hybride_fullpretrained.py` lit ses chemins dans les variables d'environnement `SDP_DATA_DIR`, `SDP_SOURCE_DIR` et `SDP_RESULTS_DIR`.

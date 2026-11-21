@@ -4,6 +4,8 @@
 
 Code et résultats de mon mémoire de maîtrise en mathématiques et informatique appliquées (concentration génie logiciel), Université du Québec à Trois-Rivières (UQTR), février 2026.
 
+[![Tests](https://github.com/mireille-kafando/software-defect-prediction-promise/actions/workflows/tests.yml/badge.svg)](https://github.com/mireille-kafando/software-defect-prediction-promise/actions/workflows/tests.yml)
+
 [English summary below](#english-summary)
 
 Un article tiré de ce mémoire a été accepté à **WSSE 2026**.
@@ -135,7 +137,8 @@ notebooks/
 └── 07_reproduction_statistique/
     └── reproduction_tableaux_15_17.ipynb          Friedman, W de Kendall, Nemenyi, ANOVA à trois facteurs (2026)
 scripts/
-└── multimodal_cpdp_hybride_fullpretrained.py      Hybride et Full Pretrained, CPDP (prototype retenu)
+└── multimodal_cpdp_hybride_fullpretrained.py      Hybride et Full Pretrained, CPDP (prototype retenu, rendu exécutable en 2026)
+tests/                                             Tests automatisés (pytest), exécutés par GitHub Actions
 results/                                           Résultats CSV et figures
 ├── statistiques/                                  Résultats des tests statistiques et figures associées
 └── figures/courbes_apprentissage/                 Courbes d'apprentissage CNN1D et Transformer
@@ -168,7 +171,7 @@ Les résultats du mémoire et de l'article sont présentés tels qu'ils ont ét�
 
 - **Nombre de paramètres.** Les ordres de grandeur du mémoire (~120K pour le CNN1D simple, ~500K pour l'encodeur) sont des estimations. Les valeurs calculées à partir du code sont données dans le tableau de la section « En bref ».
 - **Tableau 8 du mémoire.** Les hyperparamètres indiqués pour l'encodeur entraîné de zéro (384 dimensions, 8 têtes, 2 couches) sont ceux de l'encodeur de métriques du modèle Hybride. L'encodeur unimodal utilise la configuration décrite dans le texte (40 dimensions, 5 couches, 4 têtes).
-- **Modèles multimodaux en CPDP.** Le script retenu a été retrouvé dans le document de travail de l'autrice ; les résultats conservés en ont exactement la structure. Tel qu'il a été conservé, le modèle Full Pretrained ne s'exécute pas (métriques projetées en 384 dimensions, CodeBERT en attend 768) : la version qui a produit les résultats Full Pretrained comportait une adaptation 384 ↔ 768, conforme au §4.3.2 mais non conservée. Synapse figure dans les résultats mais pas dans la liste de projets du script.
+- **Modèles multimodaux en CPDP.** Le script retenu a été retrouvé dans le document de travail de l'autrice ; les résultats conservés en ont exactement la structure. Tel qu'il a été conservé, le modèle Full Pretrained ne s'exécutait pas (métriques projetées en 384 dimensions, CodeBERT en attend 768) : la version qui a produit les résultats Full Pretrained comportait une adaptation 384 ↔ 768, conforme au §4.3.2 mais non conservée. Synapse figurait dans les résultats mais pas dans la liste de projets du script. En 2026, le script a été rendu exécutable par trois modifications repérées « [2026] » dans le code : la projection `nn.Linear(384, 768)` décrite au §4.3.2, l'ajout de Synapse et des chemins configurables. Avec l'architecture de CodeBERT, l'Hybride et le Full Pretrained comptent alors exactement 130 306 050 et 250 910 978 paramètres. Ces modifications ne touchent ni au protocole ni aux points de méthode de cette liste. La [version conservée](https://github.com/mireille-kafando/software-defect-prediction-promise/blob/409c1a9/scripts/multimodal_cpdp_hybride_fullpretrained.py) reste consultable.
 - **Standardisation des modèles multimodaux.** Chaque version passe par son propre `StandardScaler`, y compris la version évaluée. Il s'agit donc en pratique d'une standardisation par version (SV) transductive, et non de la standardisation globale (SG) indiquée au tableau 12, où elle est notée « S1 ».
 - **Arrêt précoce et sélection du modèle.** Il n'y a pas de jeu de validation distinct de la dernière version évaluée : l'arrêt précoce du CNN1D (`restore_best_weights=True`) et la sélection du « meilleur » modèle dans les scripts multimodaux sont pilotés par l'ensemble dont le score est rapporté, ce qui peut rendre les G-Mean optimistes. L'encodeur Transformer unimodal (100 époques fixes) n'est pas concerné.
 - **Alignement métriques ↔ code.** La fonction d'alignement du prototype tronque les noms qualifiés au nom du paquetage (`org.apache.tools.ant.Main` devient `orgapachetoolsant`). Mesuré sur le corpus réel, elle ne relie que 0,7 % des classes à leur propre fichier, et chaque version ne reçoit qu'entre 1 et 34 fichiers distincts. Si c'est bien cette fonction qui a produit les résultats multimodaux, ces modèles ont vu un code presque identique d'une classe à l'autre, ce qui pourrait expliquer l'absence de gain du multimodal.
@@ -178,13 +181,33 @@ Les résultats du mémoire et de l'article sont présentés tels qu'ils ont ét�
 
 1. Obtenir les données PROMISE et le code source des projets (voir [`data/README.md`](data/README.md)).
 2. Ouvrir un notebook dans Google Colab (GPU recommandé pour les modèles CodeBERT), ou localement après `pip install -r requirements.txt`.
-3. Adapter les chemins `/content/drive/MyDrive/bug/...` à l'emplacement des données.
+3. Dans les notebooks, adapter les chemins `/content/drive/MyDrive/bug/...` à l'emplacement des données. Le script multimodal lit ses chemins dans des variables d'environnement :
+
+```bash
+SDP_DATA_DIR=bug-data/ SDP_SOURCE_DIR=bug-data/source-code/source-code/ SDP_RESULTS_DIR=resultats/ \
+python scripts/multimodal_cpdp_hybride_fullpretrained.py
+```
 
 Les notebooks sont des notebooks de recherche : ils gardent la trace des itérations successives et ne constituent pas une bibliothèque prête à l'emploi.
 
+### Tests
+
+```bash
+pip install -r requirements-tests.txt
+pytest
+```
+
+Les tests s'exécutent sans les données PROMISE ni les poids de CodeBERT, en moins d'une minute sur processeur. Ils vérifient :
+- la cohérence des fichiers de `results/` (projets, plages de valeurs, G-Mean = √(sensibilité × spécificité)) ;
+- les tests statistiques du tableau 15 reproduits à partir de ces fichiers ;
+- le script multimodal : passe avant des deux modèles, nombres de paramètres, fonctions de préparation et d'évaluation, et un entraînement CPDP complet sur des données synthétiques ;
+- l'exécution complète du notebook de reproduction statistique.
+
+GitHub Actions les relance à chaque modification du dépôt.
+
 ## Compétences mises en œuvre
 
-Python · TensorFlow/Keras · PyTorch · Hugging Face Transformers (CodeBERT) · scikit-learn · imbalanced-learn · pandas · SciPy/statsmodels (Shapiro-Wilk, ANOVA, ANOVA à mesures répétées, Kruskal-Wallis, Friedman, Wilcoxon, Tukey HSD, Nemenyi, W de Kendall, ANOVA à trois facteurs, corrélations de Spearman) · Matplotlib/Seaborn · Google Colab
+Python · TensorFlow/Keras · PyTorch · Hugging Face Transformers (CodeBERT) · scikit-learn · imbalanced-learn · pandas · SciPy/statsmodels (Shapiro-Wilk, ANOVA, ANOVA à mesures répétées, Kruskal-Wallis, Friedman, Wilcoxon, Tukey HSD, Nemenyi, W de Kendall, ANOVA à trois facteurs, corrélations de Spearman) · Matplotlib/Seaborn · pytest · GitHub Actions · Google Colab
 
 ## Auteure
 
@@ -205,6 +228,7 @@ Code and results from my master's thesis (Université du Québec à Trois-Riviè
 - **Findings:** (1) performance converges on a 60–66% G-Mean plateau, which likely reflects the information limits of static CK metrics; (2) the simple 1D CNN is the best and most stable model in CPDP (66.6%), while the multimodal models, 500–1,000× larger, are the least stable (50.9% and 54.7%); (3) project characteristics explain about 77% of performance variance, versus 23% for methodological choices.
 - **Statistics:** Shapiro-Wilk normality checks, then parametric or non-parametric tests (t-test, ANOVA, repeated-measures ANOVA, Kruskal-Wallis, Friedman, Wilcoxon). No preprocessing choice significantly affects G-Mean at α = 0.05; in CPDP the simple 1D CNN significantly outperforms the Transformer encoder (p = 0.014) and the Hybrid model (Friedman p = 0.020, Nemenyi p = 0.020). A reproduction notebook recomputes thesis Tables 15–17 (Kendall's W, Nemenyi, three-way ANOVA) from the CSV files. Details and figures in `results/statistiques/`; learning curves in `results/figures/courbes_apprentissage/`.
 - **Known limitations:** results are reported as published. A post-publication code review found several issues (early stopping driven by the evaluated version, per-version scaling in the multimodal models, and a metrics-to-code alignment that matched only 0.7% of classes to their own file). They are documented in *Écarts relevés* and will be addressed in a follow-up paper.
+- **Code and tests:** the multimodal CPDP script was made runnable in 2026 through three marked changes (the 384 → 768 projection described in the thesis, the missing Synapse project, configurable paths), with no change to the protocol. A pytest suite, run by GitHub Actions on every push, checks the result files, the reproduced statistical tests, both multimodal models (forward pass, exact parameter counts, an end-to-end CPDP run on synthetic data) and the reproduction notebook.
 - **Traceability:** each retained notebook is mapped to the thesis section and table it supports, with the code-versus-text discrepancies found during verification (see *Traçabilité* above).
 
 Supervised by Profs. Mourad Badri and Fadel Touré (UQTR). A paper based on this thesis was accepted at WSSE 2026.

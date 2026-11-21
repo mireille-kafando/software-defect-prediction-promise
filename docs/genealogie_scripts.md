@@ -27,8 +27,10 @@ Les G-Mean CPDP du tableau 12 proviennent des fichiers `training_results_<modèl
 
 ## Écarts entre le script et les résultats conservés
 
-1. **Full Pretrained ne s'exécute pas tel qu'écrit.** La projection des métriques produit 384 dimensions, mais CodeBERT attend 768 dimensions en entrée (`inputs_embeds`). Le test de forme (CodeBERT à l'architecture identique, poids aléatoires) donne `RuntimeError: The size of tensor a (384) must match the size of tensor b (768)`. Le modèle Hybride, lui, s'exécute. La version qui a produit les résultats Full Pretrained comportait donc une adaptation 384 ↔ 768, comme le décrit le §4.3.2 du mémoire (`nn.Linear(384, 768)`), mais cette version n'a pas été conservée.
-2. **Synapse.** La liste `target_projects` du script ne contient pas Synapse, alors que les résultats conservés l'incluent. L'ordre des clés enregistrées diffère aussi légèrement. La version exécutée était donc une variante proche du script publié.
+Ces deux écarts ont été corrigés en 2026 pour rendre le script exécutable (modifications repérées « [2026] » dans le code). Les points de méthode de la section suivante, eux, sont laissés en l'état.
+
+1. **Full Pretrained ne s'exécute pas tel qu'écrit.** La projection des métriques produit 384 dimensions, mais CodeBERT attend 768 dimensions en entrée (`inputs_embeds`). Le test de forme (CodeBERT à l'architecture identique, poids aléatoires) donne `RuntimeError: The size of tensor a (384) must match the size of tensor b (768)`. Le modèle Hybride, lui, s'exécute. La version qui a produit les résultats Full Pretrained comportait donc une adaptation 384 ↔ 768, comme le décrit le §4.3.2 du mémoire (`nn.Linear(384, 768)`), mais cette version n'a pas été conservée. *Rétabli en 2026* : le script contient désormais cette projection, et la sortie de l'encodeur des métriques est ramenée à 384 dimensions par la projection `code_projection` existante. Avec l'architecture de CodeBERT, le modèle compte alors 250 910 978 paramètres, comme la variante décrite dans le mémoire.
+2. **Synapse.** La liste `target_projects` du script ne contient pas Synapse, alors que les résultats conservés l'incluent. L'ordre des clés enregistrées diffère aussi légèrement. La version exécutée était donc une variante proche du script publié. *Rétabli en 2026* : Synapse a été ajouté à la liste.
 
 ## Points de méthode
 
